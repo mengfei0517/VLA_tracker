@@ -1,0 +1,20 @@
+[project]
+name = "vla-tracker-mvp"
+version = "0.1.0"
+description = "Minimal MVP for Transformer, DP, and FM"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "torch",          # Core framework: Transformer and DP
+    "torchvision",    # Image processing utilities
+    "jax",            # Core framework: FM and high-performance transforms
+    "jaxlib",         # JAX backend
+    "numpy",          # Fundamental math library
+    "matplotlib",     # Trajectory visualization
+    "tqdm",           # Progress bar
+]
+
+[tool.uv]
+# Use PyTorch CPU build to save space and avoid CUDA-related errors
+index-url = "https://download.pytorch.org/whl/cpu"
+extra-index-url = ["https://pypi.org/simple"]
