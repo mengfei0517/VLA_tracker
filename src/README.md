@@ -1,47 +1,68 @@
-# VLA-FullStack-Guide 落地路线图
+# VLA-FullStack-Guide: From Brain to Motion
 
-> Vision-Language-Action 全栈工程化指南：从底层原理到工程落地的完整路线图
+This repository serves as a comprehensive guide for building Vision-Language-Action (VLA) models. It bridges the gap between high-level multimodal reasoning and low-level physical execution, focusing on generative policies and end-to-end robot learning.
 
----
-
-## 📋 路线图总览
+## 📋 Roadmap Overview
 
 ```
 VLA-FullStack-Guide/
-├── Conceptual_Framework/    # 1️⃣ 底层原理：建立 VLA 世界观
-├── Data_Engine/             # 2️⃣ 数据环：标准化数据流水线
-├── Training_&_Inference/    # 3️⃣ 算法黑盒：生成式策略数学关
-├── Code_Lab/                # 4️⃣ 手速练习：拒绝调包侠
-└── 工程化落地工具/          # 5️⃣ 工具链：转化、加速、评估
+├── 01_Conceptual_Foundations/    # The "Brain-Cerebellum" duality, Transformer QKV, & World Models
+├── 02_Generative_Action_Heads/   # Mathematical kernels: ACT (CVAE), Diffusion (SDE), & Flow Matching (ODE)
+├── 03_Data_Engine_&_IL/          # Expert trajectories, Action Chunking, and LeRobot Pipeline
+├── 04_Code_Lab_Implementations/  # Mini-scripts (Transformer, DP, FM, ACT, VLA) - No "Black Box" allowed
+└── 05_Deployment_&_Optimization/ # Quantization, Real-time latency (50Hz+), and Hardware abstraction
 ```
 
+## 🎯 Learning Path & Milestones
+
+| Phase | Milestone | Focus | Key Concepts |
+|-------|-----------|-------|--------------|
+| Phase 1 | The Brain | Multimodal Understanding | ViT, Transformer, Cross-Attention, GELU |
+| Phase 2 | The Cerebellum | Action Distribution Modeling | CVAE, Noise Prediction, Velocity Fields |
+| Phase 3 | The Synthesis | End-to-End VLA Integration | Monolithic vs. Modular, Tokenization vs. Flow |
+| Phase 4 | The Practice | Imitation Learning (IL) | Teleoperation, Action Chunking, LeRobot Pipeline |
+| Phase 5 | The Frontier | High-Frequency Real-time | Flow Matching, Optimal Transport, Low-Latency ODE |
+
+## 🧠 Core Philosophy: The Dialectics of Robotics
+
+### 1. The Monolithic Unity
+
+We define Monolithic VLA not just by code structure, but by Gradient Continuity. Whether it is Discrete Tokenization (OpenVLA) or Continuous Flow (π0), the goal is a seamless mapping from raw pixels to motor torques without information bottlenecks.
+
+### 2. Brain vs. Cerebellum (System 1 vs. System 2)
+
+- **The Brain (VLM/Backbone):** Responsible for Semantic Grounding. It understands "What" the task is and "Where" the objects are using dense token features.
+- **The Cerebellum (Action Head):** Responsible for Physical Grounding. It handles the "How" by refining random noise or velocity fields into smooth, collision-free trajectories.
+
+### 3. Distribution Matching vs. Regression
+
+Embodied AI is not a simple regression problem. It is about Modeling Multimodal Distributions.
+
+- ACT compresses distributions via CVAE latents.
+- Diffusion/FM models the distribution landscape via iterative refinement.
+
+## 💻 Code Lab: The "Mini" Series
+
+Minimalist implementations for maximum understanding.
+
+- [x] **mini_transformer.py** — Manual QKV and Attention mechanisms
+- [x] **mini_dp.py** — Diffusion Policy with Noise Scheduler and Denoising Loop
+- [x] **mini_fm.py** — Flow Matching with ODE Euler integration (The π0 way)
+- [x] **mini_act.py** — Action Chunking with CVAE for deterministic imitation
+- [x] **small_vla.py** — Integrating Transformer Backbones with Cross-Attention Action Heads
+
+## 🛠️ Toolchain Integration
+
+- **Data & Training:** Hugging Face LeRobot — Standardizing the IL pipeline
+- **Simulation:** Isaac Gym / PyBullet — Massively parallel data collection
+- **Real-time Middleware:** DORA-rs — Ultra-low latency data flow for robots
+
+## 📚 Essential References
+
+- **State-of-the-art:** π0 (Physical Intelligence)
+- **Foundation Models:** OpenVLA | RT-2
+- **Policy Paradigms:** Diffusion Policy | ACT (Aloha)
+
 ---
 
-## 🎯 学习路径建议
-
-| 阶段 | 模块 | 预计周期 | 前置依赖 |
-|------|------|----------|----------|
-| Phase 1 | Conceptual_Framework | 2-3 周 | 深度学习基础 |
-| Phase 2 | Data_Engine | 2 周 | Phase 1 |
-| Phase 3 | Training_&_Inference | 3-4 周 | Phase 1-2 |
-| Phase 4 | Code_Lab | 持续 | Phase 1-3 |
-| Phase 5 | 工程化落地工具 | 持续 | Phase 2+ |
-
----
-
-## 🧠 核心思想
-
-**"大脑"与"小脑"的辩证统一**  
-- **大脑**：VLM 负责理解、规划、推理（What & Why）  
-- **小脑**：Action Head 负责精密的运动控制（How）
-
-VLA 的本质是让语言模型学会「说」动作，而不仅仅是「说」语言。
-
----
-
-## 📚 参考资料索引
-
-- [RT-2](https://github.com/google-deepmind/rt-2) | [OpenVLA](https://github.com/openvla/openvla)
-- [LeRobot](https://github.com/huggingface/lerobot) | [UMI](https://github.com/real-stanford/universal_manipulation_interface)
-- [Diffusion Policy](https://github.com/columbia-ai-robotics/diffusion_policy) | [TorchCFM](https://github.com/Atanov/torch-cfm)
-- [ACT](https://github.com/tonyzhaozh/act) | [DORA-rs](https://github.com/ehsan4/dora-rs)
+> *"The essence of VLA is teaching Language Models to 'speak' in actions, translating the world's pixels into the robot's pulse."*
