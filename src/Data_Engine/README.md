@@ -1,64 +1,93 @@
-# Data_Engine | 数据环
+# # Data_Engine | High-Fidelity Robot Learning
 
-> 解决「垃圾进，垃圾出」的问题，建立标准化的数据流水线
+> **Core Philosophy**: In VLA systems, the Action Head is only as precise as the Perceptual Grounding provided by the Data Engine. We shift from "Big Data" to **"Balanced, High-Density Data."**
 
----
+## 🎯 Case Study: The "Peg-in-Hole" Precision Crisis
 
-## 🎯 核心目标
+During our 30h  post-training, we identified a critical bottleneck: the model fails at the final assembly stage due to **Visual Ambiguity** and **Data Contradiction**.
 
-掌握机器人学习的数据工程范式，建立可复现、可扩展的数据采集与处理流水线。
+### 1. The Redundancy Paradox (30h @ 2eps vs. 15h @ 4eps)
 
----
+* **The Problem**: Why did 30h @ 2eps outperform 15h @ 4eps, yet 15h @ 4eps was better than 15h @ 2eps?
+* **The Logic**:
+* **Statistical Smoothing**: 30h of data provides a "thick" distribution. Even if redundant, the micro-variations in human demos act as a **Natural Low-Pass Filter**, creating a smoother Velocity Field in Flow Matching.
+* **Information Density**: 15h of pruned data has higher "Information Per Batch." It requires more epochs (4) to extract the diverse features, whereas 30h is so dense that 4 epochs lead to **Overfitting on Noise**.
+* **The Conclusion**: Scale provides a "Safety Net" of generalizability, but Pruning requires deeper training to reach the same "Stability."
 
-## 📌 重点内容
 
-### 1. LeRobot Ecosystem
 
-**掌握 lerobot.datasets 的 Zarr 存储格式**
+### 2. The Perceptual Grounding Gap (Hand-Eye vs. Overhead)
 
-- **Zarr 格式优势**：分块存储、懒加载、多进程友好
-- **数据结构规范**：
-  - `observation.images.top` / `observation.images.wrist`
-  - `action`：chunk 维度与时间对齐
-  - `episode_index` / `frame_index`
-- **数据处理接口**：`lerobot.datasets` 的 Dataset 与 DataLoader 用法
-- **数据增强**：视觉 + 动作空间的同步变换
-
-**这是目前工程落地最推崇的格式**，与 HuggingFace 生态深度集成。
-
-### 2. UMI Implementation
-
-**解析手持相机采集轨迹的数学坐标变换**
-
-- **Camera-to-Gripper 变换**：
-  - 外参标定（Hand-Eye Calibration）
-  - 相机坐标系 → 机械臂基座坐标系
-- **手持 vs 固定相机**：轨迹补偿与时间同步
-- **多相机融合**：多视角下的位姿估计
-- **UMI 遥操作**：异构设备的统一接口设计
+* **The Problem**: Why does the model rely on the far-away overhead camera for precision tasks?
+* **The Logic**: The overhead camera has a stable **Global Coordinate Frame**. Hand-eye cameras suffer from **Feature Drift** during movement. The Transformer naturally attends to the most stable signal, even if it lacks the resolution for  assembly.
+* **The Solution**: **Multi-Scale Tokenization.** Force the model to "Zoom In."
 
 ---
 
-## 📂 参考项目
+## 🏗️ Technical Architecture: The Balanced Data Pipeline
 
-| 项目 | 机构 | 学习重点 |
-|------|------|----------|
-| **LeRobot** | HuggingFace | 核心参考，尤其是其数据处理接口与 Zarr 规范 |
-| **UMI** | Columbia | 异构遥操作的工程标杆，手持采集的数学建模 |
+To solve **State Aliasing** (model cannot distinguish between "Success" and "Failure" in blurry views), we implement a multi-source balanced pipeline.
+
+### 1. Balanced Multi-Source Loader
+
+This prevents the "Drowning Effect" where 30h of old data washes out 3h of new, high-precision corrective data.
+
+```python
+import torch
+from torch.utils.data import DataLoader, WeightedRandomSampler, ConcatDataset
+
+def get_vla_balanced_loader(dataset_old, dataset_new, batch_size=32):
+    """
+    Implements 1:1 Balanced Sampling to prioritize high-precision corrections.
+    """
+    # Combine the redundant base and the sparse precision datasets
+    combined_dataset = ConcatDataset([dataset_old, dataset_new])
+    
+    # Assign weights so that each dataset contributes 50% of every batch
+    weights_old = [1.0 / len(dataset_old)] * len(dataset_old)
+    weights_new = [1.0 / len(dataset_new)] * len(dataset_new)
+    weights = torch.DoubleTensor(weights_old + weights_new)
+    
+    sampler = WeightedRandomSampler(weights, len(weights), replacement=True)
+    return DataLoader(combined_dataset, batch_size=batch_size, sampler=sampler)
+
+```
+
+### 2. Multi-View Token Fusion (RoI Injection)
+
+Instead of just feeding raw frames, we inject a **Region of Interest (RoI)** token from the wrist camera to fix the resolution mismatch.
+
+```python
+def extract_precision_tokens(wrist_img, overhead_img, model_backbone):
+    # 1. Global context from overhead
+    global_feat = model_backbone(overhead_img) # [B, N_global, D]
+    
+    # 2. Precision crop from wrist camera (The "Zoom-In" effect)
+    # This forces the model to see the hole edges clearly
+    wrist_crop = transforms.CenterCrop(112)(wrist_img) 
+    local_feat = model_backbone(wrist_crop) # [B, N_local, D]
+    
+    # 3. Concatenate for Transformer input
+    return torch.cat([global_feat, local_feat], dim=1)
+
+```
 
 ---
 
-## 📖 建议学习顺序
+## 📂 Engineering Roadmap & Best Practices
 
-1. 安装 LeRobot，跑通官方 demo 数据集
-2. 理解 Zarr 存储结构的元数据布局
-3. 编写自定义数据集 → LeRobot 格式的转换脚本
-4. 研究 UMI 论文中的坐标变换推导
-5. 实践：用手持手机采集一段轨迹并完成标定
+| Strategy | Goal | Why it works |
+| --- | --- | --- |
+| **Balanced Sampling** | Prevent Catastrophic Forgetting | Ensures the high-precision "Corrections" are seen as frequently as "Global Moves." |
+| **Domain Prompting** | Resolve Strategy Conflict | Adding a `<precision_mode>` token tells the model when to ignore blurry global cues. |
+| **Delta-Pos Injection** | Solve State Aliasing | Visuals fail at , but Relative Z-depth from proprioception is an absolute success indicator. |
+| **Pruning + High Epochs** | Maximize Sample Efficiency | Pruning removes the "easy" redundant samples; higher epochs are then needed to master the "hard" ones. |
 
 ---
 
-## 🔗 延伸阅读
+## 🔗 Critical Tooling & Links
 
-- LeRobot: [GitHub](https://github.com/huggingface/lerobot) | [Docs](https://huggingface.co/docs/lerobot)
-- UMI: [GitHub](https://github.com/real-stanford/universal_manipulation_interface) | [Paper](https://arxiv.org/abs/2402.10329)
+* **[Hugging Face LeRobot](https://github.com/huggingface/lerobot)**: Standardizing the `LeRobotDataset` for multi-cam VLA training.
+* **[ (Physical Intelligence)](https://www.physicalintelligence.company/blog/pi0)**: Reference for the Flow Matching objective and data scaling laws.
+* **[UMI (Universal Manipulation Interface)](https://github.com/real-stanford/universal_manipulation_interface)**: Best practices for hand-eye camera calibration and data collection.
+* **[OpenVLA Action Tokenization](https://github.com/openvla/openvla)**: Contrastive methods to improve action grounding.

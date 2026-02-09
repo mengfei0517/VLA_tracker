@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Compare</title>
+  <style>
+    :root {
+      --bg: #fff;
+      --surface: #fafafa;
+      --border: #e0e0e0;
+      --line: #333;
+      --text: #111;
+      --text-muted: #666;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+      font-size: 14px;
+    }
+
+    .header {
+      max-width: 1200px;
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .video-count {
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--border);
+    }
+
+    .video-count button {
+      font-family: inherit;
+      padding: 8px 14px;
+      border: none;
+      border-right: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .video-count button:last-child {
+      border-right: none;
+    }
+
+    .video-count button:hover {
+      color: var(--text);
+      background: var(--surface);
+    }
+
+    .video-count button.active {
+      background: var(--line);
+      color: var(--bg);
+    }
+
+    .global-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      font-family: inherit;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .btn:hover {
+      border-color: var(--line);
+      background: var(--surface);
+    }
+
+    .btn-primary {
+      border-color: var(--line);
+      background: var(--line);
+      color: var(--bg);
+    }
+
+    .btn-primary:hover {
+      background: var(--text);
+      border-color: var(--text);
+    }
+
+    .grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      min-height: 55vh;
+    }
+
+    .grid.count-1 { grid-template-columns: 1fr; }
+    .grid.count-2 { grid-template-columns: 1fr 1fr; }
+    .grid.count-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .grid.count-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+
+    .card {
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      min-height: 260px;
+    }
+
+    .card-header {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .card-header .num {
+      font-weight: 600;
+      color: var(--text);
+      margin-right: 6px;
+    }
+
+    .video-wrap {
+      flex: 1;
+      position: relative;
+      background: var(--surface);
+      min-height: 180px;
+    }
+
+    .video-wrap video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .video-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .video-placeholder.hidden {
+      display: none;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      padding: 10px 12px;
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .input-row input[type="text"],
+    .input-row input[type="number"] {
+      flex: 1;
+      min-width: 100px;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+      font-family: ui-monospace, monospace;
+    }
+
+    .input-row input:focus {
+      outline: none;
+      border-color: var(--line);
+    }
+
+    .input-row input[type="file"] {
+      display: none;
+    }
+
+    .file-label {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .file-label:hover {
+      border-color: var(--line);
+      color: var(--text);
+    }
+
+    .controls-row {
+      padding: 8px 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .controls-row label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .timestamp-input {
+      width: 72px;
+      padding: 5px 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-monospace, monospace;
+      font-size: 13px;
+    }
+
+    .speed-select {
+      padding: 5px 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .progress-row {
+      padding: 6px 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .progress-bar-wrap {
+      flex: 1;
+      height: 4px;
+      background: var(--border);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--line);
+      width: 0%;
+      transition: width 0.05s linear;
+    }
+
+    .progress-time {
+      font-size: 11px;
+      font-family: ui-monospace, monospace;
+      color: var(--text-muted);
+      min-width: 72px;
+      text-align: right;
+    }
+
+    .stop-options {
+      padding: 6px 12px;
+      border-top: 1px solid var(--border);
+      display: none;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .stop-options.visible {
+      display: flex;
+    }
+
+    .stop-options input[type="checkbox"] {
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .card.hidden {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .grid.count-3,
+      .grid.count-4 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>Video Compare</h1>
+    <div class="video-count">
+      <button type="button" data-count="1" class="active">1</button>
+      <button type="button" data-count="2">2</button>
+      <button type="button" data-count="3">3</button>
+      <button type="button" data-count="4">4</button>
+    </div>
+    <div class="global-actions">
+      <button type="button" class="btn btn-primary" id="playAll">Play all</button>
+      <button type="button" class="btn" id="stopAll">Stop all</button>
+    </div>
+  </header>
+
+  <main class="grid count-1" id="grid">
+    <article class="card" data-index="0">
+      <div class="card-header"><span class="num">1</span> Video</div>
+      <div class="video-wrap">
+        <video id="video0" playsinline></video>
+        <div class="video-placeholder" id="placeholder0">Paste URL or choose file</div>
+      </div>
+      <div class="input-row">
+        <input type="text" id="url0" placeholder="Video URL" />
+        <label class="file-label" for="file0">Choose file</label>
+        <input type="file" id="file0" accept="video/*" />
+      </div>
+      <div class="progress-row">
+        <div class="progress-bar-wrap" data-seek="0" title="Seek">
+          <div class="progress-bar-fill" id="progressFill0"></div>
+        </div>
+        <span class="progress-time" id="progressTime0">0:00 / 0:00</span>
+      </div>
+      <div class="controls-row">
+        <label>Sync time (s)</label>
+        <input type="number" id="time0" class="timestamp-input" min="0" step="0.1" value="0" placeholder="0" />
+        <label>Speed</label>
+        <select id="speed0" class="speed-select">
+          <option value="0.25">0.25x</option>
+          <option value="0.5">0.5x</option>
+          <option value="0.75">0.75x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+          <option value="1.75">1.75x</option>
+          <option value="2">2x</option>
+          <option value="2.5">2.5x</option>
+          <option value="3">3x</option>
+          <option value="4">4x</option>
+          <option value="6">6x</option>
+          <option value="8">8x</option>
+          <option value="12">12x</option>
+          <option value="16">16x</option>
+        </select>
+        <button type="button" class="btn" data-play="0">Play</button>
+        <button type="button" class="btn" data-stop="0">Stop</button>
+        <button type="button" class="btn" data-set-time="0">Set time</button>
+      </div>
+      <div class="stop-options" id="stopOptions0">
+        <label><input type="checkbox" id="syncOnStop0" /> Set sync time to current when stopped</label>
+      </div>
+    </article>
+    <article class="card hidden" data-index="1">
+      <div class="card-header"><span class="num">2</span> Video</div>
+      <div class="video-wrap">
+        <video id="video1" playsinline></video>
+        <div class="video-placeholder" id="placeholder1">Paste URL or choose file</div>
+      </div>
+      <div class="input-row">
+        <input type="text" id="url1" placeholder="Video URL" />
+        <label class="file-label" for="file1">Choose file</label>
+        <input type="file" id="file1" accept="video/*" />
+      </div>
+      <div class="progress-row">
+        <div class="progress-bar-wrap" data-seek="1" title="Seek">
+          <div class="progress-bar-fill" id="progressFill1"></div>
+        </div>
+        <span class="progress-time" id="progressTime1">0:00 / 0:00</span>
+      </div>
+      <div class="controls-row">
+        <label>Sync time (s)</label>
+        <input type="number" id="time1" class="timestamp-input" min="0" step="0.1" value="0" placeholder="0" />
+        <label>Speed</label>
+        <select id="speed1" class="speed-select">
+          <option value="0.25">0.25x</option>
+          <option value="0.5">0.5x</option>
+          <option value="0.75">0.75x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+          <option value="1.75">1.75x</option>
+          <option value="2">2x</option>
+          <option value="2.5">2.5x</option>
+          <option value="3">3x</option>
+          <option value="4">4x</option>
+          <option value="6">6x</option>
+          <option value="8">8x</option>
+          <option value="12">12x</option>
+          <option value="16">16x</option>
+        </select>
+        <button type="button" class="btn" data-play="1">Play</button>
+        <button type="button" class="btn" data-stop="1">Stop</button>
+        <button type="button" class="btn" data-set-time="1">Set time</button>
+      </div>
+      <div class="stop-options" id="stopOptions1">
+        <label><input type="checkbox" id="syncOnStop1" /> Set sync time to current when stopped</label>
+      </div>
+    </article>
+    <article class="card hidden" data-index="2">
+      <div class="card-header"><span class="num">3</span> Video</div>
+      <div class="video-wrap">
+        <video id="video2" playsinline></video>
+        <div class="video-placeholder" id="placeholder2">Paste URL or choose file</div>
+      </div>
+      <div class="input-row">
+        <input type="text" id="url2" placeholder="Video URL" />
+        <label class="file-label" for="file2">Choose file</label>
+        <input type="file" id="file2" accept="video/*" />
+      </div>
+      <div class="progress-row">
+        <div class="progress-bar-wrap" data-seek="2" title="Seek">
+          <div class="progress-bar-fill" id="progressFill2"></div>
+        </div>
+        <span class="progress-time" id="progressTime2">0:00 / 0:00</span>
+      </div>
+      <div class="controls-row">
+        <label>Sync time (s)</label>
+        <input type="number" id="time2" class="timestamp-input" min="0" step="0.1" value="0" placeholder="0" />
+        <label>Speed</label>
+        <select id="speed2" class="speed-select">
+          <option value="0.25">0.25x</option>
+          <option value="0.5">0.5x</option>
+          <option value="0.75">0.75x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+          <option value="1.75">1.75x</option>
+          <option value="2">2x</option>
+          <option value="2.5">2.5x</option>
+          <option value="3">3x</option>
+          <option value="4">4x</option>
+          <option value="6">6x</option>
+          <option value="8">8x</option>
+          <option value="12">12x</option>
+          <option value="16">16x</option>
+        </select>
+        <button type="button" class="btn" data-play="2">Play</button>
+        <button type="button" class="btn" data-stop="2">Stop</button>
+        <button type="button" class="btn" data-set-time="2">Set time</button>
+      </div>
+      <div class="stop-options" id="stopOptions2">
+        <label><input type="checkbox" id="syncOnStop2" /> Set sync time to current when stopped</label>
+      </div>
+    </article>
+    <article class="card hidden" data-index="3">
+      <div class="card-header"><span class="num">4</span> Video</div>
+      <div class="video-wrap">
+        <video id="video3" playsinline></video>
+        <div class="video-placeholder" id="placeholder3">Paste URL or choose file</div>
+      </div>
+      <div class="input-row">
+        <input type="text" id="url3" placeholder="Video URL" />
+        <label class="file-label" for="file3">Choose file</label>
+        <input type="file" id="file3" accept="video/*" />
+      </div>
+      <div class="progress-row">
+        <div class="progress-bar-wrap" data-seek="3" title="Seek">
+          <div class="progress-bar-fill" id="progressFill3"></div>
+        </div>
+        <span class="progress-time" id="progressTime3">0:00 / 0:00</span>
+      </div>
+      <div class="controls-row">
+        <label>Sync time (s)</label>
+        <input type="number" id="time3" class="timestamp-input" min="0" step="0.1" value="0" placeholder="0" />
+        <label>Speed</label>
+        <select id="speed3" class="speed-select">
+          <option value="0.25">0.25x</option>
+          <option value="0.5">0.5x</option>
+          <option value="0.75">0.75x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+          <option value="1.75">1.75x</option>
+          <option value="2">2x</option>
+          <option value="2.5">2.5x</option>
+          <option value="3">3x</option>
+          <option value="4">4x</option>
+          <option value="6">6x</option>
+          <option value="8">8x</option>
+          <option value="12">12x</option>
+          <option value="16">16x</option>
+        </select>
+        <button type="button" class="btn" data-play="3">Play</button>
+        <button type="button" class="btn" data-stop="3">Stop</button>
+        <button type="button" class="btn" data-set-time="3">Set time</button>
+      </div>
+      <div class="stop-options" id="stopOptions3">
+        <label><input type="checkbox" id="syncOnStop3" /> Set sync time to current when stopped</label>
+      </div>
+    </article>
+  </main>
+
+  <script>
+    const grid = document.getElementById('grid');
+    const countButtons = document.querySelectorAll('.video-count button');
+    const cards = document.querySelectorAll('.card');
+    let currentCount = 1;
+
+    countButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const count = parseInt(btn.dataset.count, 10);
+        currentCount = count;
+        countButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        grid.className = 'grid count-' + count;
+        cards.forEach((card, i) => {
+          card.classList.toggle('hidden', i >= count);
+        });
+      });
+    });
+
+    const videos = [
+      document.getElementById('video0'),
+      document.getElementById('video1'),
+      document.getElementById('video2'),
+      document.getElementById('video3'),
+    ];
+
+    const placeholders = [
+      document.getElementById('placeholder0'),
+      document.getElementById('placeholder1'),
+      document.getElementById('placeholder2'),
+      document.getElementById('placeholder3'),
+    ];
+
+    [0, 1, 2, 3].forEach(i => {
+      const urlInput = document.getElementById('url' + i);
+      urlInput.addEventListener('change', () => loadFromUrl(i, urlInput.value.trim()));
+      urlInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') loadFromUrl(i, urlInput.value.trim());
+      });
+    });
+
+    function loadFromUrl(index, url) {
+      if (!url) return;
+      const video = videos[index];
+      video.src = url;
+      video.load();
+      placeholders[index].classList.add('hidden');
+    }
+
+    [0, 1, 2, 3].forEach(i => {
+      const fileInput = document.getElementById('file' + i);
+      fileInput.addEventListener('change', () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+        const video = videos[i];
+        video.src = URL.createObjectURL(file);
+        video.load();
+        placeholders[i].classList.add('hidden');
+      });
+    });
+
+    videos.forEach((v, i) => {
+      v.addEventListener('loadeddata', () => placeholders[i].classList.add('hidden'));
+      v.addEventListener('error', () => placeholders[i].classList.remove('hidden'));
+    });
+
+    function formatTime(s) {
+      if (!isFinite(s) || s < 0) return '0:00';
+      const m = Math.floor(s / 60);
+      const sec = Math.floor(s % 60);
+      return m + ':' + (sec < 10 ? '0' : '') + sec;
+    }
+
+    function updateProgress(i) {
+      const video = videos[i];
+      const fill = document.getElementById('progressFill' + i);
+      const timeEl = document.getElementById('progressTime' + i);
+      const dur = video.duration;
+      if (!isFinite(dur) || dur <= 0) {
+        timeEl.textContent = formatTime(video.currentTime) + ' / 0:00';
+        fill.style.width = '0%';
+        return;
+      }
+      const pct = (video.currentTime / dur) * 100;
+      fill.style.width = pct + '%';
+      timeEl.textContent = formatTime(video.currentTime) + ' / ' + formatTime(dur);
+    }
+
+    [0, 1, 2, 3].forEach(i => {
+      const video = videos[i];
+      video.addEventListener('timeupdate', () => updateProgress(i));
+      video.addEventListener('loadedmetadata', () => updateProgress(i));
+      video.addEventListener('pause', () => {
+        document.getElementById('stopOptions' + i).classList.add('visible');
+        if (document.getElementById('syncOnStop' + i).checked && video.src) {
+          document.getElementById('time' + i).value = video.currentTime.toFixed(1);
+        }
+      });
+      video.addEventListener('play', () => {
+        document.getElementById('stopOptions' + i).classList.remove('visible');
+      });
+    });
+
+    document.querySelectorAll('.progress-bar-wrap').forEach(wrap => {
+      wrap.addEventListener('click', (e) => {
+        const i = parseInt(wrap.dataset.seek, 10);
+        const video = videos[i];
+        if (!video.src || !isFinite(video.duration)) return;
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const t = (x / rect.width) * video.duration;
+        video.currentTime = Math.max(0, Math.min(t, video.duration));
+        updateProgress(i);
+      });
+    });
+
+    document.querySelectorAll('[data-stop]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = parseInt(btn.dataset.stop, 10);
+        videos[i].pause();
+      });
+    });
+
+    [0, 1, 2, 3].forEach(i => {
+      const sel = document.getElementById('speed' + i);
+      sel.addEventListener('change', () => {
+        videos[i].playbackRate = parseFloat(sel.value);
+      });
+    });
+
+    document.querySelectorAll('[data-play]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = parseInt(btn.dataset.play, 10);
+        const video = videos[i];
+        const timeInput = document.getElementById('time' + i);
+        const t = parseFloat(timeInput.value) || 0;
+        video.currentTime = t;
+        video.playbackRate = parseFloat(document.getElementById('speed' + i).value);
+        video.play();
+      });
+    });
+
+    document.querySelectorAll('[data-set-time]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = parseInt(btn.dataset.setTime, 10);
+        const video = videos[i];
+        const timeInput = document.getElementById('time' + i);
+        if (video.src) timeInput.value = video.currentTime.toFixed(1);
+      });
+    });
+
+    document.getElementById('playAll').addEventListener('click', () => {
+      for (let i = 0; i < currentCount; i++) {
+        const video = videos[i];
+        if (!video.src) continue;
+        const timeInput = document.getElementById('time' + i);
+        const speedSel = document.getElementById('speed' + i);
+        const t = parseFloat(timeInput.value) || 0;
+        video.currentTime = t;
+        video.playbackRate = parseFloat(speedSel.value);
+        video.play();
+      }
+    });
+
+    document.getElementById('stopAll').addEventListener('click', () => {
+      videos.forEach(v => v.pause());
+    });
+  </script>
+</body>
+</html>
